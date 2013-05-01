@@ -47,7 +47,7 @@ class GeocodableBehavior extends ModelBehavior {
 	 */
 	protected $services = array(
 		'google' => array(
-			'url' => 'http://maps.google.com/maps/geo?q=${address}&output=csv&key=${key}',
+			'url' => 'https://maps.google.com/maps/geo?q=${address}&output=csv&key=${key}',
 			'format' => '${address1} ${address2}, ${city}, ${zip} ${state}, ${country}',
 			'pattern' => '/200,[^,]+,([^,]+),([^,\s]+)/',
 			'matches' => array(
@@ -56,7 +56,7 @@ class GeocodableBehavior extends ModelBehavior {
 			)
 		),
 		'yahoo' => array(
-			'url' => 'http://api.local.yahoo.com/MapsService/V1/geocode?appid=${key}&location=${address}',
+			'url' => 'https://api.local.yahoo.com/MapsService/V1/geocode?appid=${key}&location=${address}',
 			'format' => '${address1} ${address2}, ${city}, ${zip} ${state}, ${country}',
 			'pattern' => '/<Latitude>(.*?)<\/Latitude><Longitude>(.*?)<\/Longitude>/U',
 			'matches' => array(

@@ -14,10 +14,10 @@ class GeomapHelper extends AppHelper {
 	 */
 	protected $services = array(
 		'google' => array(
-			'url' => 'http://www.google.com/jsapi?key=${key}'
+			'url' => 'https://www.google.com/jsapi?key=${key}'
 		),
 		'yahoo' => array(
-			'url' => 'http://api.maps.yahoo.com/ajaxymap?v=3.8&appid=${key}'
+			'url' => 'https://api.maps.yahoo.com/ajaxymap?v=3.8&appid=${key}'
 		)
 	);
 
