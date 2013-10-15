@@ -51,16 +51,7 @@ class GeocodableBehavior extends ModelBehavior {
 	 */
 	protected $services = array(
 		'google' => array(
-			'url' => 'http://maps.google.com/maps/geo?q=${address}&output=csv&key=${key}',
-			'format' => '${address1} ${address2}, ${city}, ${zip} ${state}, ${country}',
-			'pattern' => '/200,[^,]+,([^,]+),([^,\s]+)/',
-			'matches' => array(
-				'latitude' => 1,
-				'longitude' => 2
-			)
-		),
-		'google-json' => array(
-			'url' => 'http://maps.google.com/maps/geo?q=${address}&output=json&key=${key}',
+			'url' => 'http://maps.googleapis.com/maps/api/geocode/json?sensor=false&address=${address}&key=${key}',
 			'format' => '${address1} ${address2}, ${city}, ${zip} ${state}, ${country}',
 			'pattern' => false,
 			'matches' => array(),
@@ -144,6 +135,8 @@ class GeocodableBehavior extends ModelBehavior {
 
 		$settings = Set::merge($this->settings[$model->alias], $settings);
 
+		$this->services['google-json'] = $this->services['google'];
+
 		if (empty($this->services[strtolower($settings['service'])])) {
 			trigger_error(sprintf(__('Geocode service %s not implemented', true), $settings['service']), E_USER_WARNING);
 			return false;
@@ -177,7 +170,7 @@ class GeocodableBehavior extends ModelBehavior {
 
 		if (
 			!empty($latitudeField) && !empty($longitudeField) &&
-			!isset($model->data[$model->alias][$latitudeField]) && !isset($model->data[$model->alias][$longitudeField])
+			empty($model->data[$model->alias][$latitudeField]) && empty($model->data[$model->alias][$longitudeField])
 		) {
 
 			// If data['address'] is set, but data['address1'] is not, assume data['address'] is the street address, not the full address
@@ -519,20 +512,25 @@ class GeocodableBehavior extends ModelBehavior {
 	 */
 	protected function _google_json_parser($json) {
 		$data = json_decode($json);
-		
+
 		$place = array();
-		if (@$data->Status->code == 200) {
-			$placemark =& $data->Placemark[0];
-			$locality = $placemark->AddressDetails->Country->AdministrativeArea->SubAdministrativeArea->Locality;
+		if (@$data->status == 'OK') {
+			$result = $data->results[0];
+			$parts = array();
+			foreach($result->address_components as $field) {
+				foreach($field->types as $type) {
+					$parts[$type][] = $field->short_name;
+				}
+			}
 			$place = array(
-				'latitude' => $placemark->Point->coordinates[0],
-				'longitude' => $placemark->Point->coordinates[1],
-				'address' => $placemark->address,
-				'address1' => $locality->Thoroughfare->ThoroughfareName,
-				'city' => $locality->LocalityName,
-				'state' => $placemark->AddressDetails->Country->AdministrativeArea->AdministrativeAreaName,
-				'zip' => $locality->PostalCode->PostalCodeNumber,
-				'country' => $placemark->AddressDetails->Country->CountryNameCode,
+				'latitude'  => $result->geometry->location->lat,
+				'longitude' => $result->geometry->location->lng,
+				'address'   => sprintf('%s %s %s', $parts['street_number'][0], $parts['route'][0], (array_key_exists('subpremise', $parts) ? ', #' . $parts['subpremise'][0] : '')),
+				'address1'  => sprintf('%s %s', $parts['street_number'][0], $parts['route'][0]),
+				'city'      => $parts['locality'][0],
+				'state'     => $parts['administrative_area_level_1'][0],
+				'zip'       => $parts['postal_code'][0],
+				'country'   => $parts['country'][0],
 			);
 		}
 		return $place;
